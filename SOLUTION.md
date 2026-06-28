@@ -30,9 +30,11 @@
 ## Project choices
 
 - The project stays on the provided Java 11, Maven, and JUnit 4 setup.
+- Apache Commons CSV is used for parsing instead of manual `String.split`, because CSV has edge cases such as quoted commas and escaped quotes.
 - Spring and REST APIs were not added because the exercise asks for a simple Java app with a `main` entry point.
 - A small `CalendarEventLoader` interface is used for the input boundary. The availability logic stays a single concrete class because there is only one implementation, and splitting it further would make it harder to read.
-- Logging frameworks, Lombok, and extra abstractions were not added to avoid over-engineering a small CLI exercise.
+- No logging framework was added. The CLI prints the required output and usage errors, while core logic returns values or throws clear exceptions.
+- Lombok and extra abstractions were not added to avoid over-engineering a small CLI exercise.
 
 ## Extensibility
 
