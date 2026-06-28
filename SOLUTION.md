@@ -22,6 +22,19 @@
 - During construction, events are converted into per-person busy-minute `BitSet`s.
 - Each availability request combines only the requested people's `BitSet`s and checks candidate start times against the requested duration.
 
+## Project choices
+
+- Kept the starter Java 11 Maven setup and JUnit 4 test stack to stay aligned with the provided project.
+- Did not add Spring or a REST API because the exercise asks for a simple Java application with a `main` entry point.
+- Added one small `CalendarEventLoader` interface for the input boundary; the availability algorithm remains a concrete, focused class because there is only one implementation.
+- Did not add logging frameworks, Lombok, or additional abstractions to avoid over-engineering a focused CLI exercise.
+
+## Extensibility
+
+- The loader validates the current 4-column CSV contract strictly. If the CSV schema changes, the change is localized to the loader and, only if needed, the domain model.
+- Additional input formats can be added by implementing `CalendarEventLoader`.
+- Multi-day support would add a date dimension to the current per-person busy-minute index while reusing the same per-day availability calculation.
+
 ## Run
 
 ```bash

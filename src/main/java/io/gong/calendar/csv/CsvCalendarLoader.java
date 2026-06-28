@@ -1,5 +1,6 @@
 package io.gong.calendar.csv;
 
+import io.gong.calendar.input.CalendarEventLoader;
 import io.gong.calendar.model.CalendarEvent;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
@@ -14,7 +15,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CsvCalendarLoader {
+public class CsvCalendarLoader implements CalendarEventLoader {
 
     public List<CalendarEvent> load(InputStream in) {
         try (Reader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {

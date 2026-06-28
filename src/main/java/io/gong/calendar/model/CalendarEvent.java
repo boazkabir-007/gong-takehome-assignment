@@ -21,7 +21,7 @@ public final class CalendarEvent {
             throw new IllegalArgumentException("Event end time must be after start time");
         }
         this.person = person.trim();
-        this.title  = Objects.requireNonNull(title);
+        this.title  = Objects.requireNonNull(title, "Event title must not be null");
         this.start  = start;
         this.end    = end;
     }
@@ -30,4 +30,9 @@ public final class CalendarEvent {
     public String getTitle()  { return title; }
     public LocalTime getStart() { return start; }
     public LocalTime getEnd()   { return end; }
+
+    @Override
+    public String toString() {
+        return "CalendarEvent{person='" + person + "', title='" + title + "', start=" + start + ", end=" + end + '}';
+    }
 }
