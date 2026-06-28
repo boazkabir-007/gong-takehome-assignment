@@ -40,7 +40,7 @@ public class App {
                 return;
             }
         } catch (IllegalArgumentException e) {
-            System.err.println(e.getMessage());
+            System.err.println("Error: " + e.getMessage());
             printUsage();
             return;
         }
