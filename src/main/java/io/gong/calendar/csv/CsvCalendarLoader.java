@@ -14,10 +14,12 @@ import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class CsvCalendarLoader implements CalendarEventLoader {
 
     public List<CalendarEvent> load(InputStream in) {
+        Objects.requireNonNull(in, "Calendar input stream must not be null");
         try (Reader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
             Iterable<CSVRecord> records = CSVFormat.DEFAULT.parse(reader);
             List<CalendarEvent> events = new ArrayList<>();

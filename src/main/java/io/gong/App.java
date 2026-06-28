@@ -20,11 +20,6 @@ public class App {
     private static final Duration DEFAULT_DURATION = Duration.ofMinutes(60);
 
     public static void main(String[] args) {
-        InputStream in = App.class.getResourceAsStream(CALENDAR_RESOURCE);
-        if (in == null) {
-            throw new IllegalStateException("calendar.csv not found on classpath: " + CALENDAR_RESOURCE);
-        }
-
         List<String> people;
         Duration duration;
 
@@ -39,6 +34,11 @@ public class App {
             System.err.println("Example: Alice,Jack,Bob 30");
             System.exit(1);
             return;
+        }
+
+        InputStream in = App.class.getResourceAsStream(CALENDAR_RESOURCE);
+        if (in == null) {
+            throw new IllegalStateException("calendar.csv not found on classpath: " + CALENDAR_RESOURCE);
         }
 
         CalendarEventLoader loader = new CsvCalendarLoader();
@@ -60,7 +60,14 @@ public class App {
         if (arg == null || arg.isBlank()) {
             throw new IllegalArgumentException("People argument must not be blank");
         }
-        return Arrays.asList(arg.split(","));
+        String[] names = arg.split(",", -1);
+        for (int i = 0; i < names.length; i++) {
+            names[i] = names[i].trim();
+            if (names[i].isEmpty()) {
+                throw new IllegalArgumentException("People argument must not contain blank names");
+            }
+        }
+        return Arrays.asList(names);
     }
 
     private static Duration parseDuration(String arg) {

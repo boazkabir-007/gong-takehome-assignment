@@ -66,6 +66,11 @@ public class CsvCalendarLoaderTest {
     }
 
     @Test
+    public void throwsOnNullInputStream() {
+        assertThrows(NullPointerException.class, () -> loader.load(null));
+    }
+
+    @Test
     public void emptyCsvReturnsEmptyList() {
         List<CalendarEvent> events = loader.load(input(""));
 

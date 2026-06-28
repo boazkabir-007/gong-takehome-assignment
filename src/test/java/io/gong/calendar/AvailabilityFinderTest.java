@@ -36,6 +36,65 @@ public class AvailabilityFinderTest {
     }
 
     @Test
+    public void personWithNoEventsIsAvailableAllDay() {
+        AvailabilityFinder finder = new AvailabilityFinder(Collections.emptyList());
+
+        List<LocalTime> slots = finder.findAvailableSlots(
+            Collections.singletonList("Eve"), Duration.ofMinutes(60)
+        );
+
+        assertEquals(times("07:00", "08:00", "09:00", "10:00", "11:00", "12:00",
+                           "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"), slots);
+    }
+
+    @Test
+    public void ignoresEventsForPeopleNotRequested() {
+        List<CalendarEvent> events = Collections.singletonList(
+            event("Bob", "Busy", "07:00", "19:00")
+        );
+        AvailabilityFinder finder = new AvailabilityFinder(events);
+
+        List<LocalTime> slots = finder.findAvailableSlots(
+            Collections.singletonList("Alice"), Duration.ofMinutes(60)
+        );
+
+        assertEquals(times("07:00", "08:00", "09:00", "10:00", "11:00", "12:00",
+                           "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"), slots);
+    }
+
+    @Test
+    public void personNameWithSurroundingWhitespaceMatchesCalendar() {
+        List<CalendarEvent> events = Collections.singletonList(
+            event("Alice", "Morning meeting", "08:00", "09:00")
+        );
+        AvailabilityFinder finder = new AvailabilityFinder(events);
+
+        List<LocalTime> slots = finder.findAvailableSlots(
+            Collections.singletonList(" Alice "), Duration.ofMinutes(60)
+        );
+
+        assertEquals(times("07:00", "09:00", "10:00", "11:00", "12:00",
+                           "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"), slots);
+    }
+
+    @Test
+    public void duplicateRequestedPeopleAreIgnored() {
+        List<CalendarEvent> events = Collections.singletonList(
+            event("Alice", "Morning", "08:00", "09:00")
+        );
+        AvailabilityFinder finder = new AvailabilityFinder(events);
+
+        List<LocalTime> singular  = finder.findAvailableSlots(
+            Collections.singletonList("Alice"), Duration.ofMinutes(60)
+        );
+        List<LocalTime> duplicates = finder.findAvailableSlots(
+            Arrays.asList("Alice", "Alice", " Alice "), Duration.ofMinutes(60)
+        );
+
+        assertEquals(singular, duplicates);
+    }
+
+    @Test
     public void backToBackEventsBlockContinuously() {
         List<CalendarEvent> events = Arrays.asList(
             event("Bob", "Morning meeting",   "08:00", "09:30"),
@@ -47,19 +106,24 @@ public class AvailabilityFinderTest {
             Collections.singletonList("Bob"), Duration.ofMinutes(60)
         );
 
-        assertEquals(times("07:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"), slots);
+        assertEquals(times("07:00", "10:00", "11:00", "12:00", "13:00",
+                           "14:00", "15:00", "16:00", "17:00", "18:00"), slots);
     }
 
     @Test
-    public void personWithNoEventsIsAvailableAllDay() {
-        AvailabilityFinder finder = new AvailabilityFinder(Collections.emptyList());
+    public void overlappingEventsAreTreatedAsOneBusyBlock() {
+        List<CalendarEvent> events = Arrays.asList(
+            event("Alice", "Meeting A", "08:00", "10:00"),
+            event("Alice", "Meeting B", "09:00", "11:00")
+        );
+        AvailabilityFinder finder = new AvailabilityFinder(events);
 
         List<LocalTime> slots = finder.findAvailableSlots(
-            Collections.singletonList("Eve"), Duration.ofMinutes(60)
+            Collections.singletonList("Alice"), Duration.ofMinutes(60)
         );
 
-        assertEquals(times("07:00", "08:00", "09:00", "10:00", "11:00", "12:00",
-                           "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"), slots);
+        assertEquals(times("07:00", "11:00", "12:00", "13:00", "14:00",
+                           "15:00", "16:00", "17:00", "18:00"), slots);
     }
 
     @Test
@@ -77,6 +141,28 @@ public class AvailabilityFinderTest {
     }
 
     @Test
+    public void exactFullDayDurationReturnsOnlySevenAm() {
+        AvailabilityFinder finder = new AvailabilityFinder(Collections.emptyList());
+
+        List<LocalTime> slots = finder.findAvailableSlots(
+            Collections.singletonList("Alice"), Duration.ofHours(12)
+        );
+
+        assertEquals(times("07:00"), slots);
+    }
+
+    @Test
+    public void durationLongerThanBusinessDayReturnsEmpty() {
+        AvailabilityFinder finder = new AvailabilityFinder(Collections.emptyList());
+
+        List<LocalTime> slots = finder.findAvailableSlots(
+            Collections.singletonList("Alice"), Duration.ofMinutes(721)
+        );
+
+        assertTrue(slots.isEmpty());
+    }
+
+    @Test
     public void returnsEmptyWhenPersonIsBusyAllDay() {
         List<CalendarEvent> events = Collections.singletonList(
             event("Alice", "All day", "07:00", "19:00")
@@ -91,6 +177,62 @@ public class AvailabilityFinderTest {
     }
 
     @Test
+    public void clampsEventsOutsideBusinessHours() {
+        List<CalendarEvent> events = Arrays.asList(
+            event("Alice", "Early", "06:00", "08:00"),
+            event("Alice", "Late",  "18:00", "20:00")
+        );
+        AvailabilityFinder finder = new AvailabilityFinder(events);
+
+        List<LocalTime> slots = finder.findAvailableSlots(
+            Collections.singletonList("Alice"), Duration.ofMinutes(60)
+        );
+
+        assertEquals(times("08:00", "09:00", "10:00", "11:00", "12:00",
+                           "13:00", "14:00", "15:00", "16:00", "17:00"), slots);
+    }
+
+    @Test
+    public void oneMinuteSlotCanStartWhenPreviousEventEnds() {
+        List<CalendarEvent> events = Arrays.asList(
+            event("Alice", "Morning block", "07:00", "09:39"),
+            event("Alice", "Next block",    "09:40", "19:00")
+        );
+        AvailabilityFinder finder = new AvailabilityFinder(events);
+
+        List<LocalTime> slots = finder.findAvailableSlots(
+            Collections.singletonList("Alice"), Duration.ofMinutes(1)
+        );
+
+        assertEquals(times("09:39"), slots);
+    }
+
+    @Test
+    public void supportsNinetyMinuteDuration() {
+        AvailabilityFinder finder = new AvailabilityFinder(Collections.emptyList());
+
+        List<LocalTime> slots = finder.findAvailableSlots(
+            Collections.singletonList("Alice"), Duration.ofMinutes(90)
+        );
+
+        assertEquals(times("07:00", "08:30", "10:00", "11:30", "13:00", "14:30", "16:00", "17:30"), slots);
+    }
+
+    @Test
+    public void thirtyMinuteDurationStepsByThirtyMinutes() {
+        AvailabilityFinder finder = new AvailabilityFinder(Collections.emptyList());
+
+        List<LocalTime> slots = finder.findAvailableSlots(
+            Collections.singletonList("Alice"), Duration.ofMinutes(30)
+        );
+
+        assertEquals(24, slots.size());
+        assertEquals(LocalTime.of(7, 0), slots.get(0));
+        assertEquals(LocalTime.of(7, 30), slots.get(1));
+        assertEquals(LocalTime.of(18, 30), slots.get(slots.size() - 1));
+    }
+
+    @Test
     public void returnsEmptyForEmptyPersonList() {
         AvailabilityFinder finder = new AvailabilityFinder(Collections.emptyList());
 
@@ -99,6 +241,33 @@ public class AvailabilityFinderTest {
         );
 
         assertTrue(slots.isEmpty());
+    }
+
+    @Test
+    public void throwsOnNullPersonList() {
+        AvailabilityFinder finder = new AvailabilityFinder(Collections.emptyList());
+
+        assertThrows(NullPointerException.class, () ->
+            finder.findAvailableSlots(null, Duration.ofMinutes(60))
+        );
+    }
+
+    @Test
+    public void throwsOnNullPersonName() {
+        AvailabilityFinder finder = new AvailabilityFinder(Collections.emptyList());
+
+        assertThrows(IllegalArgumentException.class, () ->
+            finder.findAvailableSlots(Arrays.asList("Alice", null), Duration.ofMinutes(60))
+        );
+    }
+
+    @Test
+    public void throwsOnBlankPersonName() {
+        AvailabilityFinder finder = new AvailabilityFinder(Collections.emptyList());
+
+        assertThrows(IllegalArgumentException.class, () ->
+            finder.findAvailableSlots(Arrays.asList("Alice", "  "), Duration.ofMinutes(60))
+        );
     }
 
     @Test
@@ -138,170 +307,13 @@ public class AvailabilityFinderTest {
     }
 
     @Test
-    public void throwsOnNullPersonList() {
-        AvailabilityFinder finder = new AvailabilityFinder(Collections.emptyList());
-
+    public void throwsOnNullEvent() {
         assertThrows(NullPointerException.class, () ->
-            finder.findAvailableSlots(null, Duration.ofMinutes(60))
+            new AvailabilityFinder(Arrays.asList(
+                event("Alice", "Morning", "08:00", "09:00"),
+                null
+            ))
         );
-    }
-
-    @Test
-    public void throwsOnNullPersonName() {
-        AvailabilityFinder finder = new AvailabilityFinder(Collections.emptyList());
-
-        assertThrows(IllegalArgumentException.class, () ->
-            finder.findAvailableSlots(Arrays.asList("Alice", null), Duration.ofMinutes(60))
-        );
-    }
-
-    @Test
-    public void throwsOnBlankPersonName() {
-        AvailabilityFinder finder = new AvailabilityFinder(Collections.emptyList());
-
-        assertThrows(IllegalArgumentException.class, () ->
-            finder.findAvailableSlots(Arrays.asList("Alice", "  "), Duration.ofMinutes(60))
-        );
-    }
-
-    @Test
-    public void personNameWithSurroundingWhitespaceMatchesCalendar() {
-        List<CalendarEvent> events = Collections.singletonList(
-            event("Alice", "Morning meeting", "08:00", "09:00")
-        );
-        AvailabilityFinder finder = new AvailabilityFinder(events);
-
-        List<LocalTime> slots = finder.findAvailableSlots(
-            Collections.singletonList(" Alice "), Duration.ofMinutes(60)
-        );
-
-        assertEquals(times("07:00", "09:00", "10:00", "11:00", "12:00",
-                           "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"), slots);
-    }
-
-    @Test
-    public void supportsNinetyMinuteDuration() {
-        AvailabilityFinder finder = new AvailabilityFinder(Collections.emptyList());
-
-        List<LocalTime> slots = finder.findAvailableSlots(
-            Collections.singletonList("Alice"), Duration.ofMinutes(90)
-        );
-
-        assertEquals(times("07:00", "08:30", "10:00", "11:30", "13:00", "14:30", "16:00", "17:30"), slots);
-    }
-
-    @Test
-    public void thirtyMinuteDurationStepsByThirtyMinutes() {
-        AvailabilityFinder finder = new AvailabilityFinder(Collections.emptyList());
-
-        List<LocalTime> slots = finder.findAvailableSlots(
-            Collections.singletonList("Alice"), Duration.ofMinutes(30)
-        );
-
-        assertEquals(24, slots.size());
-        assertEquals(LocalTime.of(7, 0), slots.get(0));
-        assertEquals(LocalTime.of(7, 30), slots.get(1));
-        assertEquals(LocalTime.of(18, 30), slots.get(slots.size() - 1));
-    }
-
-    @Test
-    public void ignoresEventsForPeopleNotRequested() {
-        List<CalendarEvent> events = Collections.singletonList(
-            event("Bob", "Busy", "07:00", "19:00")
-        );
-        AvailabilityFinder finder = new AvailabilityFinder(events);
-
-        List<LocalTime> slots = finder.findAvailableSlots(
-            Collections.singletonList("Alice"), Duration.ofMinutes(60)
-        );
-
-        assertEquals(times("07:00", "08:00", "09:00", "10:00", "11:00", "12:00",
-                           "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"), slots);
-    }
-
-    @Test
-    public void clampsEventsOutsideBusinessHours() {
-        List<CalendarEvent> events = Arrays.asList(
-            event("Alice", "Early", "06:00", "08:00"),
-            event("Alice", "Late",  "18:00", "20:00")
-        );
-        AvailabilityFinder finder = new AvailabilityFinder(events);
-
-        List<LocalTime> slots = finder.findAvailableSlots(
-            Collections.singletonList("Alice"), Duration.ofMinutes(60)
-        );
-
-        assertEquals(times("08:00", "09:00", "10:00", "11:00", "12:00",
-                           "13:00", "14:00", "15:00", "16:00", "17:00"), slots);
-    }
-
-    @Test
-    public void overlappingEventsAreTreatedAsOneBusyBlock() {
-        List<CalendarEvent> events = Arrays.asList(
-            event("Alice", "Meeting A", "08:00", "10:00"),
-            event("Alice", "Meeting B", "09:00", "11:00")
-        );
-        AvailabilityFinder finder = new AvailabilityFinder(events);
-
-        List<LocalTime> slots = finder.findAvailableSlots(
-            Collections.singletonList("Alice"), Duration.ofMinutes(60)
-        );
-
-        assertEquals(times("07:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"), slots);
-    }
-
-    @Test
-    public void exactFullDayDurationReturnsOnlySevenAm() {
-        AvailabilityFinder finder = new AvailabilityFinder(Collections.emptyList());
-
-        List<LocalTime> slots = finder.findAvailableSlots(
-            Collections.singletonList("Alice"), Duration.ofHours(12)
-        );
-
-        assertEquals(times("07:00"), slots);
-    }
-
-    @Test
-    public void durationLongerThanBusinessDayReturnsEmpty() {
-        AvailabilityFinder finder = new AvailabilityFinder(Collections.emptyList());
-
-        List<LocalTime> slots = finder.findAvailableSlots(
-            Collections.singletonList("Alice"), Duration.ofMinutes(721)
-        );
-
-        assertTrue(slots.isEmpty());
-    }
-
-    @Test
-    public void duplicateRequestedPeopleAreIgnored() {
-        List<CalendarEvent> events = Collections.singletonList(
-            event("Alice", "Morning", "08:00", "09:00")
-        );
-        AvailabilityFinder finder = new AvailabilityFinder(events);
-
-        List<LocalTime> singular  = finder.findAvailableSlots(
-            Collections.singletonList("Alice"), Duration.ofMinutes(60)
-        );
-        List<LocalTime> duplicates = finder.findAvailableSlots(
-            Arrays.asList("Alice", "Alice", " Alice "), Duration.ofMinutes(60)
-        );
-
-        assertEquals(singular, duplicates);
-    }
-
-    @Test
-    public void oneMinuteSlotCanStartWhenPreviousEventEnds() {
-        List<CalendarEvent> events = Arrays.asList(
-            event("Alice", "Morning block", "07:00", "09:39"),
-            event("Alice", "Next block",    "09:40", "19:00")
-        );
-        AvailabilityFinder finder = new AvailabilityFinder(events);
-
-        List<LocalTime> slots = finder.findAvailableSlots(
-            Collections.singletonList("Alice"), Duration.ofMinutes(1)
-        );
-
-        assertEquals(times("09:39"), slots);
     }
 
     private static CalendarEvent event(String person, String title, String start, String end) {
