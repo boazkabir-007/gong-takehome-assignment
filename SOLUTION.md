@@ -38,6 +38,12 @@
 ## Run
 
 ```bash
+# run all tests
 mvn clean test
+
+# default: Alice and Jack, 60-minute meeting
 mvn compile exec:java
+
+# custom: pass comma-separated people and duration in minutes
+mvn compile exec:java -Dexec.args="Alice,Jack,Bob 30"
 ```
