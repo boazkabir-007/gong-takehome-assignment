@@ -1,6 +1,7 @@
 package io.gong.calendar;
 
 import io.gong.calendar.model.CalendarEvent;
+import io.gong.calendar.model.TimeRange;
 
 import java.time.Duration;
 import java.time.LocalTime;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 public class AvailabilityFinder {
@@ -24,6 +26,26 @@ public class AvailabilityFinder {
     public AvailabilityFinder(List<CalendarEvent> events) {
         Objects.requireNonNull(events, "Events list must not be null");
         this.busyMinutesByPerson = buildBusyMinutesByPerson(events);
+    }
+
+    public Optional<LocalTime> findFirstAvailableSlot(List<String> personList, Duration eventDuration) {
+        return findAvailableSlots(personList, eventDuration).stream().findFirst();
+    }
+
+    public List<TimeRange> findFreeWindows(List<String> personList) {
+        Set<String> people = requestedPeople(personList);
+        BitSet busy = combineBusyMinutes(people);
+        List<TimeRange> windows = new ArrayList<>();
+        int minute = 0;
+        while (minute < DAY_MINUTES) {
+            int freeStart = busy.nextClearBit(minute);
+            if (freeStart >= DAY_MINUTES) break;
+            int busyStart = busy.nextSetBit(freeStart);
+            int freeEnd = (busyStart == -1) ? DAY_MINUTES : busyStart;
+            windows.add(new TimeRange(DAY_START.plusMinutes(freeStart), DAY_START.plusMinutes(freeEnd)));
+            minute = freeEnd;
+        }
+        return windows;
     }
 
     public List<LocalTime> findAvailableSlots(List<String> personList, Duration eventDuration) {

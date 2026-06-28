@@ -1,6 +1,7 @@
 package io.gong.calendar;
 
 import io.gong.calendar.model.CalendarEvent;
+import io.gong.calendar.model.TimeRange;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -8,6 +9,7 @@ import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
@@ -368,8 +370,123 @@ public class AvailabilityFinderTest {
         ), slots);
     }
 
+    @Test
+    public void findFirstAvailableSlotReturnsEarliestForReadmeExample() {
+        List<CalendarEvent> events = Arrays.asList(
+            event("Alice", "Morning meeting",   "08:00", "09:30"),
+            event("Alice", "Lunch with Jack",   "13:00", "14:00"),
+            event("Alice", "Yoga",              "16:00", "17:00"),
+            event("Jack",  "Morning meeting",   "08:00", "08:50"),
+            event("Jack",  "Sales call",        "09:00", "09:40"),
+            event("Jack",  "Lunch with Alice",  "13:00", "14:00"),
+            event("Jack",  "Yoga",              "16:00", "17:00")
+        );
+        AvailabilityFinder finder = new AvailabilityFinder(events);
+
+        Optional<LocalTime> slot = finder.findFirstAvailableSlot(
+            Arrays.asList("Alice", "Jack"), Duration.ofMinutes(60)
+        );
+
+        assertEquals(Optional.of(LocalTime.of(7, 0)), slot);
+    }
+
+    @Test
+    public void findFirstAvailableSlotReturnsEmptyWhenBusyAllDay() {
+        List<CalendarEvent> events = Collections.singletonList(
+            event("Alice", "All day", "07:00", "19:00")
+        );
+        AvailabilityFinder finder = new AvailabilityFinder(events);
+
+        Optional<LocalTime> slot = finder.findFirstAvailableSlot(
+            Collections.singletonList("Alice"), Duration.ofMinutes(60)
+        );
+
+        assertEquals(Optional.empty(), slot);
+    }
+
+    @Test
+    public void findFreeWindowsReturnsFullDayWhenNoEvents() {
+        AvailabilityFinder finder = new AvailabilityFinder(Collections.emptyList());
+
+        List<TimeRange> windows = finder.findFreeWindows(Collections.singletonList("Alice"));
+
+        assertEquals(Arrays.asList(range("07:00", "19:00")), windows);
+    }
+
+    @Test
+    public void findFreeWindowsReturnsEmptyWhenBusyAllDay() {
+        List<CalendarEvent> events = Collections.singletonList(
+            event("Alice", "All day", "07:00", "19:00")
+        );
+        AvailabilityFinder finder = new AvailabilityFinder(events);
+
+        List<TimeRange> windows = finder.findFreeWindows(Collections.singletonList("Alice"));
+
+        assertTrue(windows.isEmpty());
+    }
+
+    @Test
+    public void findFreeWindowsForReadmeAliceAndJack() {
+        List<CalendarEvent> events = Arrays.asList(
+            event("Alice", "Morning meeting",   "08:00", "09:30"),
+            event("Alice", "Lunch with Jack",   "13:00", "14:00"),
+            event("Alice", "Yoga",              "16:00", "17:00"),
+            event("Jack",  "Morning meeting",   "08:00", "08:50"),
+            event("Jack",  "Sales call",        "09:00", "09:40"),
+            event("Jack",  "Lunch with Alice",  "13:00", "14:00"),
+            event("Jack",  "Yoga",              "16:00", "17:00")
+        );
+        AvailabilityFinder finder = new AvailabilityFinder(events);
+
+        List<TimeRange> windows = finder.findFreeWindows(Arrays.asList("Alice", "Jack"));
+
+        // Alice is busy until 09:30; Jack's sales call extends to 09:40, so the window opens at 09:40
+        assertEquals(Arrays.asList(
+            range("07:00", "08:00"),
+            range("09:40", "13:00"),
+            range("14:00", "16:00"),
+            range("17:00", "19:00")
+        ), windows);
+    }
+
+    @Test
+    public void findFreeWindowsForDenseMultiPersonCalendar() {
+        List<CalendarEvent> events = Arrays.asList(
+            event("Alice", "Meeting",  "08:00", "09:00"),
+            event("Alice", "Standup",  "10:30", "11:00"),
+            event("Jack",  "Meeting",  "08:30", "09:30"),
+            event("Jack",  "Lunch",    "12:00", "13:00"),
+            event("Bob",   "Meeting",  "09:00", "10:00"),
+            event("Bob",   "Review",   "14:00", "15:30")
+        );
+        AvailabilityFinder finder = new AvailabilityFinder(events);
+
+        List<TimeRange> windows = finder.findFreeWindows(Arrays.asList("Alice", "Jack", "Bob"));
+
+        assertEquals(Arrays.asList(
+            range("07:00", "08:00"),
+            range("10:00", "10:30"),
+            range("11:00", "12:00"),
+            range("13:00", "14:00"),
+            range("15:30", "19:00")
+        ), windows);
+    }
+
+    @Test
+    public void findFreeWindowsValidationMatchesFindAvailableSlots() {
+        AvailabilityFinder finder = new AvailabilityFinder(Collections.emptyList());
+
+        assertThrows(NullPointerException.class, () -> finder.findFreeWindows(null));
+        assertThrows(IllegalArgumentException.class, () -> finder.findFreeWindows(Collections.emptyList()));
+        assertThrows(IllegalArgumentException.class, () -> finder.findFreeWindows(Collections.singletonList("  ")));
+    }
+
     private static CalendarEvent event(String person, String title, String start, String end) {
         return new CalendarEvent(person, title, LocalTime.parse(start), LocalTime.parse(end));
+    }
+
+    private static TimeRange range(String start, String end) {
+        return new TimeRange(LocalTime.parse(start), LocalTime.parse(end));
     }
 
     private static List<LocalTime> times(String... times) {

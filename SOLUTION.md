@@ -40,6 +40,12 @@
 - Additional input formats can be added by implementing `CalendarEventLoader`.
 - Multi-day support would add a date dimension to the current per-person busy-minute index while reusing the same per-day availability calculation.
 
+## Extra features
+
+- `findFirstAvailableSlot(personList, eventDuration)` returns the earliest available start time as an `Optional<LocalTime>`, delegating to `findAvailableSlots` and taking the first element.
+- `findFreeWindows(personList)` returns all maximal free `TimeRange`s for the requested people, independent of any meeting duration, using half-open `[start, end)` ranges.
+- Both methods share the same `BitSet` model: `findAvailableSlots` derives duration-aligned start candidates from it, while `findFreeWindows` derives raw free ranges — two different projections over one data structure.
+
 ## Run
 
 ```bash
