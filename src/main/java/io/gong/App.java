@@ -40,9 +40,13 @@ public class App {
             return;
         }
 
-        AvailabilityFinder finder = createAvailabilityFinder();
-        List<LocalTime> slots = finder.findAvailableSlots(people, duration);
-        printSlots(slots);
+        try {
+            AvailabilityFinder finder = createAvailabilityFinder();
+            List<LocalTime> slots = finder.findAvailableSlots(people, duration);
+            printSlots(slots);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            System.err.println("Error: " + e.getMessage());
+        }
     }
 
     private static AvailabilityFinder createAvailabilityFinder() {
