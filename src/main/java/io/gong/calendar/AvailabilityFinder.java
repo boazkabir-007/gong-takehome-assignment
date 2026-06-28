@@ -43,7 +43,7 @@ public class AvailabilityFinder {
 
         for (CalendarEvent event : events) {
             Objects.requireNonNull(event, "Event must not be null");
-            BitSet busy = map.computeIfAbsent(personKey(event.getPerson()), p -> new BitSet(DAY_MINUTES));
+            BitSet busy = map.computeIfAbsent(personLookupKey(event.getPerson()), p -> new BitSet(DAY_MINUTES));
             busy.set(minuteOffset(event.getStart()), minuteOffset(event.getEnd()));
         }
 
@@ -68,10 +68,7 @@ public class AvailabilityFinder {
 
         Set<String> people = new HashSet<>();
         for (String person : personList) {
-            if (person == null || person.trim().isEmpty()) {
-                throw new IllegalArgumentException("Person names must not be blank");
-            }
-            people.add(personKey(person));
+            people.add(personLookupKey(person));
         }
         return people;
     }
@@ -104,7 +101,10 @@ public class AvailabilityFinder {
         return nextBusy == -1 || nextBusy >= startMinute + durationMinutes;
     }
 
-    private String personKey(String person) {
+    private String personLookupKey(String person) {
+        if (person == null || person.isBlank()) {
+            throw new IllegalArgumentException("Person names must not be blank");
+        }
         return person.trim().toLowerCase(Locale.ROOT);
     }
 
