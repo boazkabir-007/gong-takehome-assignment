@@ -1,0 +1,33 @@
+package io.gong.calendar.model;
+
+import java.time.LocalTime;
+import java.util.Objects;
+
+public final class CalendarEvent {
+
+    private final String person;
+    private final String title;
+    private final LocalTime start;
+    private final LocalTime end;
+
+    public CalendarEvent(String person, String title, LocalTime start, LocalTime end) {
+        if (person == null || person.isBlank()) {
+            throw new IllegalArgumentException("Person name must not be blank");
+        }
+        if (start == null || end == null) {
+            throw new IllegalArgumentException("Event start and end times must not be null");
+        }
+        if (!end.isAfter(start)) {
+            throw new IllegalArgumentException("Event end time must be after start time");
+        }
+        this.person = person.trim();
+        this.title  = Objects.requireNonNull(title);
+        this.start  = start;
+        this.end    = end;
+    }
+
+    public String getPerson() { return person; }
+    public String getTitle()  { return title; }
+    public LocalTime getStart() { return start; }
+    public LocalTime getEnd()   { return end; }
+}
