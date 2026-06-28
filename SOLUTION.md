@@ -11,6 +11,7 @@
 - A person without events is considered available for the full day.
 - Events outside business hours are clamped to the 07:00–19:00 window.
 - Person names are matched case-insensitively after trimming surrounding whitespace. Original names are preserved in CalendarEvent; normalization is used only for matching.
+- The requested person list must contain at least one person.
 - Blank person names in the requested list are rejected.
 - Duplicate requested names are ignored after trimming and case normalization.
 

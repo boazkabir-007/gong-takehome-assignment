@@ -248,14 +248,12 @@ public class AvailabilityFinderTest {
     }
 
     @Test
-    public void returnsEmptyForEmptyPersonList() {
+    public void throwsOnEmptyPersonList() {
         AvailabilityFinder finder = new AvailabilityFinder(Collections.emptyList());
 
-        List<LocalTime> slots = finder.findAvailableSlots(
-            Collections.emptyList(), Duration.ofMinutes(60)
+        assertThrows(IllegalArgumentException.class, () ->
+            finder.findAvailableSlots(Collections.emptyList(), Duration.ofMinutes(60))
         );
-
-        assertTrue(slots.isEmpty());
     }
 
     @Test

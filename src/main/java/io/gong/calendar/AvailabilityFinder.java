@@ -30,7 +30,7 @@ public class AvailabilityFinder {
         Set<String> people = requestedPeople(personList);
         int durationMinutes = durationInWholeMinutes(eventDuration);
 
-        if (people.isEmpty() || durationMinutes > DAY_MINUTES) {
+        if (durationMinutes > DAY_MINUTES) {
             return List.of();
         }
 
@@ -70,6 +70,11 @@ public class AvailabilityFinder {
         for (String person : personList) {
             people.add(personLookupKey(person));
         }
+
+        if (people.isEmpty()) {
+            throw new IllegalArgumentException("Person list must not be empty");
+        }
+
         return people;
     }
 
