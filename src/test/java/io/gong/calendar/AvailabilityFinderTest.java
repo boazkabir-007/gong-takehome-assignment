@@ -329,6 +329,45 @@ public class AvailabilityFinderTest {
         );
     }
 
+    @Test
+    public void sourceRowsWithDifferentPersonCaseAreMergedAsSamePerson() {
+        List<CalendarEvent> events = Arrays.asList(
+            event("Alice", "Morning",   "08:00", "09:00"),
+            event("alice", "Afternoon", "14:00", "15:00")
+        );
+        AvailabilityFinder finder = new AvailabilityFinder(events);
+
+        List<LocalTime> slots = finder.findAvailableSlots(
+            Collections.singletonList("ALICE"), Duration.ofMinutes(60)
+        );
+
+        assertEquals(times("07:00", "09:00", "10:00", "11:00", "12:00",
+                           "13:00", "15:00", "16:00", "17:00", "18:00"), slots);
+    }
+
+    @Test
+    public void findsSlotsForDenseMultiPersonCalendar() {
+        List<CalendarEvent> events = Arrays.asList(
+            event("Alice", "Meeting",  "08:00", "09:00"),
+            event("Alice", "Standup",  "10:30", "11:00"),
+            event("Jack",  "Meeting",  "08:30", "09:30"),
+            event("Jack",  "Lunch",    "12:00", "13:00"),
+            event("Bob",   "Meeting",  "09:00", "10:00"),
+            event("Bob",   "Review",   "14:00", "15:30")
+        );
+        AvailabilityFinder finder = new AvailabilityFinder(events);
+
+        List<LocalTime> slots = finder.findAvailableSlots(
+            Arrays.asList("Alice", "Jack", "Bob"), Duration.ofMinutes(30)
+        );
+
+        assertEquals(times(
+            "07:00", "07:30", "10:00", "11:00", "11:30",
+            "13:00", "13:30", "15:30", "16:00", "16:30",
+            "17:00", "17:30", "18:00", "18:30"
+        ), slots);
+    }
+
     private static CalendarEvent event(String person, String title, String start, String end) {
         return new CalendarEvent(person, title, LocalTime.parse(start), LocalTime.parse(end));
     }

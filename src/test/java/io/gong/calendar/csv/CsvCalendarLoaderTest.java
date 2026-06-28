@@ -77,6 +77,90 @@ public class CsvCalendarLoaderTest {
         assertEquals(0, events.size());
     }
 
+    @Test
+    public void skipsExactHeaderRow() {
+        String csv = "Person name,Event subject,Event start time,Event end time\n" +
+                     "Alice,\"Morning meeting\",08:00,09:00\n";
+
+        List<CalendarEvent> events = loader.load(input(csv));
+
+        assertEquals(1, events.size());
+        assertEquals("Alice", events.get(0).getPerson());
+    }
+
+    @Test
+    public void rejectsInvalidFirstRowInsteadOfTreatingAsHeader() {
+        String csv = "Alice,Morning,8am,09:30\n";
+
+        assertThrows(IllegalArgumentException.class, () -> loader.load(input(csv)));
+    }
+
+    @Test
+    public void rejectsNonHHmmTimeFormat() {
+        assertThrows(IllegalArgumentException.class, () ->
+            loader.load(input("Alice,\"Meeting\",8:00,09:00\n")));
+
+        assertThrows(IllegalArgumentException.class, () ->
+            loader.load(input("Alice,\"Meeting\",08:00:00,09:00\n")));
+    }
+
+    @Test
+    public void stripsUtf8Bom() {
+        String csv = "\uFEFFAlice,\"Morning meeting\",08:00,09:00\n";
+
+        List<CalendarEvent> events = loader.load(input(csv));
+
+        assertEquals("Alice", events.get(0).getPerson());
+    }
+
+    @Test
+    public void preservesPersonNameCaseFromCsv() {
+        String csv = "Alice,\"Morning\",08:00,09:00\nalice,\"Afternoon\",14:00,15:00\n";
+
+        List<CalendarEvent> events = loader.load(input(csv));
+
+        assertEquals(2, events.size());
+        assertEquals("Alice", events.get(0).getPerson());
+        assertEquals("alice", events.get(1).getPerson());
+    }
+
+    @Test
+    public void parsesCrlfLineEndings() {
+        String csv = "Alice,\"Morning\",08:00,09:00\r\nJack,\"Call\",10:00,11:00\r\n";
+
+        List<CalendarEvent> events = loader.load(input(csv));
+
+        assertEquals(2, events.size());
+    }
+
+    @Test
+    public void skipsBlankLines() {
+        String csv = "Alice,\"Morning\",08:00,09:00\n\nJack,\"Call\",10:00,11:00\n";
+
+        List<CalendarEvent> events = loader.load(input(csv));
+
+        assertEquals(2, events.size());
+    }
+
+    @Test
+    public void trimsSurroundingWhitespaceInFields() {
+        String csv = "  Alice  ,Morning meeting,08:00,09:00\n";
+
+        List<CalendarEvent> events = loader.load(input(csv));
+
+        assertEquals("Alice", events.get(0).getPerson());
+    }
+
+    @Test
+    public void parsesUnicodeCharacters() {
+        String csv = "Renée,\"Déjeuner café\",12:00,13:00\n";
+
+        List<CalendarEvent> events = loader.load(input(csv));
+
+        assertEquals("Renée", events.get(0).getPerson());
+        assertEquals("Déjeuner café", events.get(0).getTitle());
+    }
+
     private InputStream fixture() {
         InputStream in = getClass().getResourceAsStream("/io/gong/calendar.csv");
         if (in == null) {

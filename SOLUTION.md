@@ -3,7 +3,11 @@
 ## Assumptions
 
 - The calendar represents one day, from 07:00 to 19:00.
-- The CSV input uses `HH:mm`, so calendar precision is minutes.
+- The CSV input uses `HH:mm` format strictly; partial formats (`8:00`) and extended formats (`08:00:00`) are rejected.
+- A matching header row is accepted and skipped (exact ordered field names, case-insensitive).
+- Blank lines in the CSV are skipped.
+- A leading UTF-8 BOM is stripped and tolerated.
+- UTF-8 input is supported, including non-ASCII names and titles.
 - Meeting durations are accepted as positive whole-minute values.
 - Sub-minute durations are rejected instead of rounded, to avoid silently changing the requested meeting length.
 - Candidate start times are evaluated on boundaries of the requested duration, starting from 07:00. For a 60-minute meeting this produces hourly candidates and matches the provided example.
@@ -19,9 +23,9 @@
 
 - CSV parsing and availability calculation are separated.
 - Core availability logic returns values and does not print.
-- `App.java` is used only for loading input, calling the finder, and printing results.
+- `App.java` is the composition root: loads the CSV, wires the finder, and prints results. Optionally accepts people and duration as CLI arguments.
 - During construction, events are converted into per-person busy-minute `BitSet`s.
-- Each availability request combines only the requested people's `BitSet`s and checks candidate start times against the requested duration.
+- Building the per-person busy index is a single pass over the events. Each query combines only the requested people's `BitSet`s and scans the fixed 720-minute business day, so queries do not rescan the full event list.
 
 ## Project choices
 
