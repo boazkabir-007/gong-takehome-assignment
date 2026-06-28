@@ -42,23 +42,32 @@ public class App {
             return;
         }
 
+        AvailabilityFinder finder = createAvailabilityFinder();
+        List<LocalTime> slots = finder.findAvailableSlots(people, duration);
+        printSlots(slots);
+    }
+
+    private static AvailabilityFinder createAvailabilityFinder() {
+        CalendarEventLoader loader = new CsvCalendarLoader();
+        List<CalendarEvent> events = loader.load(openCalendarResource());
+        return new AvailabilityFinder(events);
+    }
+
+    private static InputStream openCalendarResource() {
         InputStream in = App.class.getResourceAsStream(CALENDAR_RESOURCE);
         if (in == null) {
             throw new IllegalStateException("calendar.csv not found on classpath: " + CALENDAR_RESOURCE);
         }
+        return in;
+    }
 
-        CalendarEventLoader loader = new CsvCalendarLoader();
-        List<CalendarEvent> events = loader.load(in);
-        AvailabilityFinder finder = new AvailabilityFinder(events);
-
-        List<LocalTime> slots = finder.findAvailableSlots(people, duration);
-
+    private static void printSlots(List<LocalTime> slots) {
         if (slots.isEmpty()) {
             System.out.println("No available slots found.");
-        } else {
-            for (LocalTime slot : slots) {
-                System.out.println("Available slot: " + slot.format(TIME_FORMAT));
-            }
+            return;
+        }
+        for (LocalTime slot : slots) {
+            System.out.println("Available slot: " + slot.format(TIME_FORMAT));
         }
     }
 
@@ -82,9 +91,10 @@ public class App {
     }
 
     private static Duration parseDuration(String arg) {
+        String value = arg.trim();
         int minutes;
         try {
-            minutes = Integer.parseInt(arg.trim());
+            minutes = Integer.parseInt(value);
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Duration must be a positive integer number of minutes: " + arg);
         }
