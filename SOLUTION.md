@@ -2,49 +2,49 @@
 
 ## Assumptions
 
-- The calendar represents one day, from 07:00 to 19:00.
-- The CSV input uses `HH:mm` format strictly; partial formats (`8:00`) and extended formats (`08:00:00`) are rejected.
-- A matching header row is accepted and skipped (exact ordered field names, case-insensitive).
-- Blank lines in the CSV are skipped.
-- A leading UTF-8 BOM is stripped and tolerated.
-- UTF-8 input is supported, including non-ASCII names and titles.
-- Meeting durations are accepted as positive whole-minute values.
-- Sub-minute durations are rejected instead of rounded, to avoid silently changing the requested meeting length.
-- Candidate start times are evaluated on boundaries of the requested duration, starting from 07:00. For a 60-minute meeting this produces hourly candidates and matches the provided example.
-- A meeting ending exactly at 19:00 is valid.
-- A person without events is considered available for the full day.
-- Events outside business hours are clamped to the 07:00–19:00 window.
-- Person names are matched case-insensitively after trimming surrounding whitespace. Original names are preserved in CalendarEvent; normalization is used only for matching.
-- The requested person list must contain at least one person.
-- Blank person names in the requested list are rejected.
-- Duplicate requested names are ignored after trimming and case normalization.
+- The calendar is a single day, from 07:00 to 19:00.
+- Times in the CSV must be written as `HH:mm`. I reject shorter forms like `8:00` and longer ones like `08:00:00`, so the format stays predictable.
+- If the first row is exactly the header (`Person name, Event subject, Event start time, Event end time`, in that order, ignoring case), I skip it. Any other first row is read as data.
+- Blank lines in the CSV are ignored.
+- If the file starts with a UTF-8 BOM, I strip it so the first name still matches.
+- The file is read as UTF-8, so non-English names and titles work (for example `Renée`).
+- A meeting duration has to be a positive whole number of minutes.
+- I reject durations shorter than a minute instead of rounding them, so I never quietly change the meeting length that was asked for.
+- I check start times in steps of the meeting length, beginning at 07:00. For a 60-minute meeting this gives hourly start times, which matches the example in the README.
+- A meeting that ends exactly at 19:00 is allowed.
+- Someone with no events is treated as free for the whole day.
+- If an event starts before 07:00 or ends after 19:00, I only count the part that falls inside the day.
+- I match people by name, ignoring case and surrounding spaces. The original name is kept on the `CalendarEvent`; the lower-cased version is only used for matching.
+- The list of requested people has to have at least one name.
+- Blank names in the requested list are rejected.
+- If the same name is requested more than once (in any casing), I only count it once.
 
 ## Design
 
-- CSV parsing and availability calculation are separated.
-- Core availability logic returns values and does not print.
-- `App.java` is the composition root: loads the CSV, wires the finder, and prints results. Optionally accepts people and duration as CLI arguments.
-- During construction, events are converted into per-person busy-minute `BitSet`s.
-- Building the per-person busy index is a single pass over the events. Each query combines only the requested people's `BitSet`s and scans the fixed 720-minute business day, so queries do not rescan the full event list.
+- I kept CSV parsing separate from the availability calculation.
+- The availability logic returns values and never prints anything itself.
+- `App.java` is the entry point: it loads the CSV, wires the finder together, and prints the results. It can also take a list of people and a duration as command-line arguments.
+- When the finder is built, I turn each person's events into a "busy minutes" `BitSet` for the day.
+- Building that busy index is a single pass over the events. Each query only combines the requested people's `BitSet`s and scans the fixed 720-minute day, so a query never has to walk the whole event list again.
 
 ## Project choices
 
-- Kept the starter Java 11 Maven setup and JUnit 4 test stack to stay aligned with the provided project.
-- Did not add Spring or a REST API because the exercise asks for a simple Java application with a `main` entry point.
-- Added one small `CalendarEventLoader` interface for the input boundary; the availability algorithm remains a concrete, focused class because there is only one implementation.
-- Did not add logging frameworks, Lombok, or additional abstractions to avoid over-engineering a focused CLI exercise.
+- I stayed on the starter Java 11 + Maven setup and JUnit 4, so the project matches what was provided.
+- I didn't add Spring or a REST API, because the exercise asks for a simple Java app with a `main` entry point.
+- I added one small `CalendarEventLoader` interface for the input boundary. The availability logic stays a single concrete class, since there is only one implementation and splitting it would make it harder to read.
+- I didn't add logging frameworks, Lombok, or extra abstractions, to avoid over-engineering a small CLI exercise.
 
 ## Extensibility
 
-- The loader validates the current 4-column CSV contract strictly. If the CSV schema changes, the change is localized to the loader and, only if needed, the domain model.
-- Additional input formats can be added by implementing `CalendarEventLoader`.
-- Multi-day support would add a date dimension to the current per-person busy-minute index while reusing the same per-day availability calculation.
+- The loader checks the 4-column CSV format strictly. If that format ever changes, the change stays inside the loader (and the model only if it has to).
+- A new input format can be added by writing another `CalendarEventLoader`.
+- To support more than one day, I would add a date to the busy index and reuse the same per-day calculation.
 
 ## Extra features
 
-- `findFirstAvailableSlot(personList, eventDuration)` returns the earliest available start time as an `Optional<LocalTime>`, delegating to `findAvailableSlots` and taking the first element.
-- `findFreeWindows(personList)` returns all maximal free `TimeRange`s for the requested people, independent of any meeting duration, using half-open `[start, end)` ranges.
-- Both methods share the same `BitSet` model: `findAvailableSlots` derives duration-aligned start candidates from it, while `findFreeWindows` derives raw free ranges — two different projections over one data structure.
+- `findFirstAvailableSlot(personList, eventDuration)` returns the earliest start time everyone is free, as an `Optional<LocalTime>`. It just reuses `findAvailableSlots` and takes the first result.
+- `findFreeWindows(personList)` returns all the free time ranges for the requested people as `TimeRange`s, without needing a meeting length. It uses half-open `[start, end)` ranges.
+- Both methods read from the same `BitSet`: `findAvailableSlots` turns it into duration-aligned start times, while `findFreeWindows` turns it into the raw free ranges. They are two views of the same data.
 
 ## Run
 

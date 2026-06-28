@@ -28,26 +28,6 @@ public class AvailabilityFinder {
         this.busyMinutesByPerson = buildBusyMinutesByPerson(events);
     }
 
-    public Optional<LocalTime> findFirstAvailableSlot(List<String> personList, Duration eventDuration) {
-        return findAvailableSlots(personList, eventDuration).stream().findFirst();
-    }
-
-    public List<TimeRange> findFreeWindows(List<String> personList) {
-        Set<String> people = requestedPeople(personList);
-        BitSet busy = combineBusyMinutes(people);
-        List<TimeRange> windows = new ArrayList<>();
-        int minute = 0;
-        while (minute < DAY_MINUTES) {
-            int freeStart = busy.nextClearBit(minute);
-            if (freeStart >= DAY_MINUTES) break;
-            int busyStart = busy.nextSetBit(freeStart);
-            int freeEnd = (busyStart == -1) ? DAY_MINUTES : busyStart;
-            windows.add(new TimeRange(DAY_START.plusMinutes(freeStart), DAY_START.plusMinutes(freeEnd)));
-            minute = freeEnd;
-        }
-        return windows;
-    }
-
     public List<LocalTime> findAvailableSlots(List<String> personList, Duration eventDuration) {
         Set<String> people = requestedPeople(personList);
         int durationMinutes = durationInWholeMinutes(eventDuration);
@@ -58,6 +38,15 @@ public class AvailabilityFinder {
 
         BitSet busyMinutes = combineBusyMinutes(people);
         return findAvailableStartTimes(busyMinutes, durationMinutes);
+    }
+
+    public Optional<LocalTime> findFirstAvailableSlot(List<String> personList, Duration eventDuration) {
+        return findAvailableSlots(personList, eventDuration).stream().findFirst();
+    }
+
+    public List<TimeRange> findFreeWindows(List<String> personList) {
+        Set<String> people = requestedPeople(personList);
+        return scanFreeWindows(combineBusyMinutes(people));
     }
 
     private Map<String, BitSet> buildBusyMinutesByPerson(List<CalendarEvent> events) {
@@ -114,6 +103,7 @@ public class AvailabilityFinder {
     private List<LocalTime> findAvailableStartTimes(BitSet busyMinutes, int durationMinutes) {
         List<LocalTime> slots = new ArrayList<>();
 
+        // Try start times in steps of the meeting length, beginning at 07:00. This matches the slots shown in the README.
         for (int start = 0; start + durationMinutes <= DAY_MINUTES; start += durationMinutes) {
             if (isAvailable(busyMinutes, start, durationMinutes)) {
                 slots.add(DAY_START.plusMinutes(start));
@@ -128,6 +118,22 @@ public class AvailabilityFinder {
         return nextBusy == -1 || nextBusy >= startMinute + durationMinutes;
     }
 
+    private List<TimeRange> scanFreeWindows(BitSet busyMinutes) {
+        List<TimeRange> windows = new ArrayList<>();
+        int minute = 0;
+        while (minute < DAY_MINUTES) {
+            int freeStart = busyMinutes.nextClearBit(minute);
+            if (freeStart >= DAY_MINUTES) {
+                break;
+            }
+            int busyStart = busyMinutes.nextSetBit(freeStart);
+            int freeEnd = (busyStart == -1) ? DAY_MINUTES : busyStart;
+            windows.add(new TimeRange(DAY_START.plusMinutes(freeStart), DAY_START.plusMinutes(freeEnd)));
+            minute = freeEnd;
+        }
+        return windows;
+    }
+
     private String personLookupKey(String person) {
         if (person == null || person.isBlank()) {
             throw new IllegalArgumentException("Person names must not be blank");
@@ -137,6 +143,7 @@ public class AvailabilityFinder {
 
     private int minuteOffset(LocalTime time) {
         int offset = (int) Duration.between(DAY_START, time).toMinutes();
+        // If a time is before 07:00 or after 19:00, pull it to the nearest edge of the day.
         return Math.max(0, Math.min(offset, DAY_MINUTES));
     }
 }
