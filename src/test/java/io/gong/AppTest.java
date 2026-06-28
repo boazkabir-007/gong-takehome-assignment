@@ -9,6 +9,7 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class AppTest {
@@ -64,6 +65,30 @@ public class AppTest {
 
         assertTrue(stdout().isEmpty());
         assertTrue(stderr().contains("Usage:"));
+    }
+
+    @Test
+    public void calendarLoadFailurePrintsCleanError() {
+        App.run(new String[0], () -> {
+            throw new IllegalArgumentException("Invalid CSV row at line 2");
+        });
+
+        assertTrue(stderr().contains("Error: Invalid CSV row at line 2"));
+        assertFalse(stderr().contains("at io.gong"));
+        assertFalse(stderr().contains("Exception"));
+        assertFalse(stderr().contains("Usage:"));
+        assertTrue(stdout().isEmpty());
+    }
+
+    @Test
+    public void customArgsPrintsCorrectSlots() {
+        App.main(new String[]{"Alice,Jack,Bob", "30"});
+
+        String output = stdout();
+        assertTrue(output.contains("Available slot: 07:00"));
+        assertTrue(output.contains("Available slot: 07:30"));
+        assertTrue(output.contains("Available slot: 11:30"));
+        assertTrue(stderr().isEmpty());
     }
 
     private String stdout() {

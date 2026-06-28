@@ -11,6 +11,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
 
 public class App {
 
@@ -20,6 +21,10 @@ public class App {
     private static final Duration DEFAULT_DURATION = Duration.ofMinutes(60);
 
     public static void main(String[] args) {
+        run(args, App::createAvailabilityFinder);
+    }
+
+    static void run(String[] args, Supplier<AvailabilityFinder> finderSupplier) {
         List<String> people;
         Duration duration;
 
@@ -41,7 +46,7 @@ public class App {
         }
 
         try {
-            AvailabilityFinder finder = createAvailabilityFinder();
+            AvailabilityFinder finder = finderSupplier.get();
             List<LocalTime> slots = finder.findAvailableSlots(people, duration);
             printSlots(slots);
         } catch (IllegalArgumentException | IllegalStateException e) {
