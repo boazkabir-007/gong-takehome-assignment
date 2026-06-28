@@ -32,13 +32,11 @@ public class App {
                 duration = parseDuration(args[1]);
             } else {
                 printUsage();
-                System.exit(1);
                 return;
             }
         } catch (IllegalArgumentException e) {
             System.err.println(e.getMessage());
             printUsage();
-            System.exit(1);
             return;
         }
 
