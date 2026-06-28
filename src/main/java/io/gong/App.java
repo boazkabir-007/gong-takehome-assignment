@@ -23,15 +23,21 @@ public class App {
         List<String> people;
         Duration duration;
 
-        if (args.length == 0) {
-            people = DEFAULT_PEOPLE;
-            duration = DEFAULT_DURATION;
-        } else if (args.length == 2) {
-            people = parsePeople(args[0]);
-            duration = parseDuration(args[1]);
-        } else {
-            System.err.println("Usage: <comma-separated-people> <duration-minutes>");
-            System.err.println("Example: Alice,Jack,Bob 30");
+        try {
+            if (args.length == 0) {
+                people = DEFAULT_PEOPLE;
+                duration = DEFAULT_DURATION;
+            } else if (args.length == 2) {
+                people = parsePeople(args[0]);
+                duration = parseDuration(args[1]);
+            } else {
+                printUsage();
+                System.exit(1);
+                return;
+            }
+        } catch (IllegalArgumentException e) {
+            System.err.println(e.getMessage());
+            printUsage();
             System.exit(1);
             return;
         }
@@ -54,6 +60,11 @@ public class App {
                 System.out.println("Available slot: " + slot.format(TIME_FORMAT));
             }
         }
+    }
+
+    private static void printUsage() {
+        System.err.println("Usage: <comma-separated-people> <duration-minutes>");
+        System.err.println("Example: Alice,Jack,Bob 30");
     }
 
     private static List<String> parsePeople(String arg) {
