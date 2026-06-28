@@ -10,9 +10,9 @@
 - A meeting ending exactly at 19:00 is valid.
 - A person without events is considered available for the full day.
 - Events outside business hours are clamped to the 07:00–19:00 window.
-- Person names are treated as identifiers and matched case-sensitively after trimming surrounding whitespace.
+- Person names are matched case-insensitively after trimming surrounding whitespace. Original names are preserved in CalendarEvent; normalization is used only for matching.
 - Blank person names in the requested list are rejected.
-- Duplicate requested names are ignored after trimming.
+- Duplicate requested names are ignored after trimming and case normalization.
 
 ## Design
 

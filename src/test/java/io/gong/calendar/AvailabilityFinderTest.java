@@ -63,6 +63,21 @@ public class AvailabilityFinderTest {
     }
 
     @Test
+    public void caseInsensitivePersonNameMatchesCalendar() {
+        List<CalendarEvent> events = Collections.singletonList(
+            event("Alice", "Morning meeting", "08:00", "09:00")
+        );
+        AvailabilityFinder finder = new AvailabilityFinder(events);
+
+        List<LocalTime> slots = finder.findAvailableSlots(
+            Collections.singletonList("alice"), Duration.ofMinutes(60)
+        );
+
+        assertEquals(times("07:00", "09:00", "10:00", "11:00", "12:00",
+                           "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"), slots);
+    }
+
+    @Test
     public void personNameWithSurroundingWhitespaceMatchesCalendar() {
         List<CalendarEvent> events = Collections.singletonList(
             event("Alice", "Morning meeting", "08:00", "09:00")
@@ -88,7 +103,7 @@ public class AvailabilityFinderTest {
             Collections.singletonList("Alice"), Duration.ofMinutes(60)
         );
         List<LocalTime> duplicates = finder.findAvailableSlots(
-            Arrays.asList("Alice", "Alice", " Alice "), Duration.ofMinutes(60)
+            Arrays.asList("Alice", "alice", " ALICE "), Duration.ofMinutes(60)
         );
 
         assertEquals(singular, duplicates);

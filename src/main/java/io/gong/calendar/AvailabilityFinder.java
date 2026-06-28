@@ -9,6 +9,7 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -42,7 +43,7 @@ public class AvailabilityFinder {
 
         for (CalendarEvent event : events) {
             Objects.requireNonNull(event, "Event must not be null");
-            BitSet busy = map.computeIfAbsent(event.getPerson(), p -> new BitSet(DAY_MINUTES));
+            BitSet busy = map.computeIfAbsent(personKey(event.getPerson()), p -> new BitSet(DAY_MINUTES));
             busy.set(minuteOffset(event.getStart()), minuteOffset(event.getEnd()));
         }
 
@@ -70,7 +71,7 @@ public class AvailabilityFinder {
             if (person == null || person.trim().isEmpty()) {
                 throw new IllegalArgumentException("Person names must not be blank");
             }
-            people.add(person.trim());
+            people.add(personKey(person));
         }
         return people;
     }
@@ -101,6 +102,10 @@ public class AvailabilityFinder {
     private boolean isAvailable(BitSet busyMinutes, int startMinute, int durationMinutes) {
         int nextBusy = busyMinutes.nextSetBit(startMinute);
         return nextBusy == -1 || nextBusy >= startMinute + durationMinutes;
+    }
+
+    private String personKey(String person) {
+        return person.trim().toLowerCase(Locale.ROOT);
     }
 
     private int minuteOffset(LocalTime time) {
