@@ -13,13 +13,15 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 public class CsvCalendarLoader implements CalendarEventLoader {
 
-    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
+    private static final DateTimeFormatter TIME_FORMAT =
+        DateTimeFormatter.ofPattern("HH:mm").withResolverStyle(ResolverStyle.STRICT);
     private static final String UTF8_BOM = "\uFEFF";
     private static final String[] HEADER_FIELDS = {
         "person name", "event subject", "event start time", "event end time"

@@ -11,6 +11,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 public class CsvCalendarLoaderTest {
 
@@ -159,6 +160,14 @@ public class CsvCalendarLoaderTest {
 
         assertEquals("Renée", events.get(0).getPerson());
         assertEquals("Déjeuner café", events.get(0).getTitle());
+    }
+
+    @Test
+    public void rejectsTwentyFourHundredTime() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+            loader.load(input("Alice,Morning,24:00,09:00\n")));
+
+        assertTrue(ex.getMessage().contains("24:00"));
     }
 
     private InputStream fixture() {
