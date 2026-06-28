@@ -1,44 +1,36 @@
 package io.gong;
 
-import java.io.*;
-import java.util.*;
+import io.gong.calendar.AvailabilityFinder;
+import io.gong.calendar.csv.CsvCalendarLoader;
+import io.gong.calendar.model.CalendarEvent;
 
-/**
- * This is the App entry point
- */
+import java.io.InputStream;
+import java.time.Duration;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+
 public class App {
 
-
-    private final static String LOGO = "                                    //                                                              \n" +
-            "                      *///.      .////*         ,*.                                                 \n" +
-            "                     ,///////***////////,   *//////                                                 \n" +
-            "      ./////*,,,,,. *///////////////////////////////                                                \n" +
-            "        ,///////////////////////////////////////////          ,,                                    \n" +
-            "         *//////////////////////////////////////////////////////.                                   \n" +
-            "          .////////////////////////////////////////////////////.                                    \n" +
-            "     *////////////////////////////////////////////////////////,                                     \n" +
-            " ///////////////////**#@@@@@@@@@@%///////*/%@@@@@@@@@#/*/////(@@@@@       @@@@@@       &@@@@@@@@@@@/\n" +
-            "  .///////////////*%@@@@@@@@@@@@@@%*////%@@@@@@@@@@@@@@@#*///(@@@@@@#     @@@@@@   ,@@@@@@@@@@@@@@@@\n" +
-            "     *////////////&@@@@&/*/////////////@@@@@%*////*/&@@@@%*//#@@@@@@@@/   @@@@@@  .@@@@@@.       ,,.\n" +
-            "      .//////////%@@@@&*///((((((((//*&@@@@%*//////*(@@@@@(*/%@@@@@@@@@@# @@@@@/  @@@@@@   ,########\n" +
-            "     .///////////&@@@@%*/*/&@@@@@@@(*/@@@@@#*//////*(@@@@@(*/&@@@@ (@@@@@@@@@@@.  @@@@@@   /@@@@@@@@\n" +
-            "    *////////////%@@@@@/*//***%@@@@(/*#@@@@@//////*/&@@@@%*//@@@@@  .%@@@@@@@@@.  @@@@@@*      @@@@@\n" +
-            "  .///////////////%@@@@@@%(((#@@@@&///*#@@@@@@#((%@@@@@@#*/*(@@@@@    /@@@@@@@@.  .&@@@@@@@@(%@@@@@@\n" +
-            "///////////////////*#@@@@@@@@@@@@@%/////*(&@@@@@@@@@@&(*///*#@@@@@       @@@@@@.     (@@@@@@@@@@@@@@\n" +
-            "          .////////////*********////////////********////////*****/                                  \n" +
-            "           ./////////////////////////////////////////////.                                          \n" +
-            "          ./////////////////////////////////////////////.                                           \n" +
-            "         *//////////////////////////////////////////////.                                           \n" +
-            "        ,/////////*  *////////,/////////////////////////.                                           \n" +
-            "       ///////,,      ,/////*    *////////*        ,,,*/.                                           \n" +
-            "      *///**.           */.        ,////*.                                                          \n" +
-            "    ,//*                              *,                                                            ";
+    private static final String CALENDAR_RESOURCE = "/io/gong/calendar.csv";
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
     public static void main(String[] args) {
-        System.out.println(LOGO);
-        System.out.println("\n\n");
-        System.out.println("Your goal is to design and create a simple Calendar in Java. You can replace this main function with your own code.");
-        System.out.println("Please see README.md");
-        System.exit(1);
+        InputStream in = App.class.getResourceAsStream(CALENDAR_RESOURCE);
+        if (in == null) {
+            throw new IllegalStateException("calendar.csv not found on classpath: " + CALENDAR_RESOURCE);
+        }
+
+        List<CalendarEvent> events = new CsvCalendarLoader().load(in);
+        AvailabilityFinder finder = new AvailabilityFinder(events);
+
+        List<LocalTime> slots = finder.findAvailableSlots(
+            List.of("Alice", "Jack"),
+            Duration.ofMinutes(60)
+        );
+
+        for (LocalTime slot : slots) {
+            System.out.println("Available slot: " + slot.format(TIME_FORMAT));
+        }
     }
 }
