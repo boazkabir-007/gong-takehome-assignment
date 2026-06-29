@@ -1,6 +1,5 @@
-package io.gong.calendar.csv;
+package io.gong.calendar.input;
 
-import io.gong.calendar.CalendarEventLoader;
 import io.gong.calendar.model.CalendarEvent;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
@@ -23,7 +22,7 @@ public class CsvCalendarLoader implements CalendarEventLoader {
 
     private static final DateTimeFormatter TIME_FORMAT =
         DateTimeFormatter.ofPattern("HH:mm").withResolverStyle(ResolverStyle.STRICT);
-    private static final String UTF8_BOM = "\uFEFF";
+    private static final String UTF8_BOM = "﻿";
     private static final String[] HEADER_FIELDS = {
         "person name", "event subject", "event start time", "event end time"
     };

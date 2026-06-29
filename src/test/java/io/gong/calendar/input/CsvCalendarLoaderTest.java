@@ -1,4 +1,4 @@
-package io.gong.calendar.csv;
+package io.gong.calendar.input;
 
 import io.gong.calendar.model.CalendarEvent;
 import org.junit.Test;
@@ -113,7 +113,7 @@ public class CsvCalendarLoaderTest {
 
     @Test
     public void stripsUtf8Bom() {
-        String csv = "\uFEFFAlice,\"Morning meeting\",08:00,09:00\n";
+        String csv = "﻿Alice,\"Morning meeting\",08:00,09:00\n";
 
         List<CalendarEvent> events = loader.load(input(csv));
 

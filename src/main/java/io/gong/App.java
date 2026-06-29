@@ -1,8 +1,8 @@
 package io.gong;
 
 import io.gong.calendar.AvailabilityFinder;
-import io.gong.calendar.csv.CsvCalendarLoader;
-import io.gong.calendar.CalendarEventLoader;
+import io.gong.calendar.input.CalendarEventLoader;
+import io.gong.calendar.input.CsvCalendarLoader;
 import io.gong.calendar.model.CalendarEvent;
 
 import java.io.InputStream;

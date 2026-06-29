@@ -1,6 +1,6 @@
 package io.gong.calendar;
 
-import io.gong.calendar.csv.CsvCalendarLoader;
+import io.gong.calendar.input.CsvCalendarLoader;
 import io.gong.calendar.model.CalendarEvent;
 import org.junit.Test;
 
