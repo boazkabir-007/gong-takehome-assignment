@@ -18,11 +18,11 @@
 
 - CSV loading and availability calculation are separate.
 - `App.java` loads the CSV, creates the finder, and prints the result.
-- Input loading goes through a small `CalendarEventLoader` interface, so another input format can be added without changing the availability code.
+- Input loading goes through a small `CalendarEventLoader` interface. `CsvCalendarLoader` is the current implementation.
 - The availability code returns values. It does not print by itself.
 - Each person's events are converted once into busy minutes for the working day, using a `BitSet`.
 - Each search combines the requested people's busy time and scans the day once.
-- The finder stays as one class because there is only one availability algorithm. Splitting it more would make this small exercise harder to follow.
+- `AvailabilityFinder` contains the availability calculation. There is only one availability algorithm.
 
 ## Project choices
 

@@ -104,8 +104,7 @@ public class AvailabilityFinder {
     private List<LocalTime> findAvailableStartTimes(BitSet busyMinutes, int durationMinutes) {
         List<LocalTime> slots = new ArrayList<>();
 
-        // Start times are checked on a fixed grid from 07:00.
-        // For a 60-minute meeting, candidates are 07:00, 08:00, 09:00, and so on.
+        // Start times follow the fixed grid described in the README example.
         for (int start = 0; start + durationMinutes <= DAY_MINUTES; start += durationMinutes) {
             if (isAvailable(busyMinutes, start, durationMinutes)) {
                 slots.add(DAY_START.plusMinutes(start));
@@ -144,8 +143,8 @@ public class AvailabilityFinder {
     }
 
     private int minuteOffset(LocalTime time) {
+        // Keep only the part of the event that falls inside the working day.
         int offset = (int) Duration.between(DAY_START, time).toMinutes();
-        // If a time is before 07:00 or after 19:00, pull it to the nearest edge of the day.
         return Math.max(0, Math.min(offset, DAY_MINUTES));
     }
 }
