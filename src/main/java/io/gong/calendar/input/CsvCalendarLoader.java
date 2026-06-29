@@ -22,7 +22,7 @@ public class CsvCalendarLoader implements CalendarEventLoader {
 
     private static final DateTimeFormatter TIME_FORMAT =
         DateTimeFormatter.ofPattern("HH:mm").withResolverStyle(ResolverStyle.STRICT);
-    private static final String UTF8_BOM = "﻿";
+    private static final String UTF8_BOM = "\uFEFF";
     private static final String[] HEADER_FIELDS = {
         "person name", "event subject", "event start time", "event end time"
     };
