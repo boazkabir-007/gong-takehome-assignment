@@ -38,7 +38,7 @@ public class CalendarEventTest {
 
     @Test
     public void throwsWhenTitleIsNull() {
-        assertThrows(NullPointerException.class, () ->
+        assertThrows(IllegalArgumentException.class, () ->
             new CalendarEvent("Alice", null, LocalTime.of(9, 0), LocalTime.of(10, 0))
         );
     }

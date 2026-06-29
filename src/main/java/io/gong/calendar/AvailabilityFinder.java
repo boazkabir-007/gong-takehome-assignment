@@ -136,7 +136,7 @@ public class AvailabilityFinder {
 
     private String personLookupKey(String person) {
         if (person == null || person.isBlank()) {
-            throw new IllegalArgumentException("Person names must not be blank");
+            throw new IllegalArgumentException("Person names must not be null or blank");
         }
         return person.trim().toLowerCase(Locale.ROOT);
     }

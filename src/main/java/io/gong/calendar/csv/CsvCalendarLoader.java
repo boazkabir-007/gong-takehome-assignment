@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -43,7 +44,7 @@ public class CsvCalendarLoader implements CalendarEventLoader {
                 events.add(parseRecord(record));
             }
             return events;
-        } catch (IOException e) {
+        } catch (IOException | UncheckedIOException e) {
             throw new IllegalStateException("Failed to read calendar data", e);
         }
     }

@@ -1,7 +1,6 @@
 package io.gong.calendar.model;
 
 import java.time.LocalTime;
-import java.util.Objects;
 
 public final class CalendarEvent {
 
@@ -20,8 +19,11 @@ public final class CalendarEvent {
         if (!end.isAfter(start)) {
             throw new IllegalArgumentException("Event end time must be after start time");
         }
+        if (title == null) {
+            throw new IllegalArgumentException("Event title must not be null");
+        }
         this.person = person.trim();
-        this.title  = Objects.requireNonNull(title, "Event title must not be null");
+        this.title  = title;
         this.start  = start;
         this.end    = end;
     }

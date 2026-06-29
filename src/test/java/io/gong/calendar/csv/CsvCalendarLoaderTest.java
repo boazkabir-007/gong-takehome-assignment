@@ -18,21 +18,27 @@ public class CsvCalendarLoaderTest {
     private final CsvCalendarLoader loader = new CsvCalendarLoader();
 
     @Test
-    public void loadsAllEventsFromFixture() {
-        List<CalendarEvent> events = loader.load(fixture());
+    public void loadsMultipleRows() {
+        String csv = "Alice,\"Morning meeting\",08:00,09:30\n" +
+                     "Jack,\"Sales call\",09:00,09:40\n" +
+                     "Bob,\"Q3 review\",10:00,11:30\n";
 
-        assertEquals(12, events.size());
+        List<CalendarEvent> events = loader.load(input(csv));
+
+        assertEquals(3, events.size());
     }
 
     @Test
     public void parsesFieldsCorrectly() {
-        List<CalendarEvent> events = loader.load(fixture());
+        String csv = "Alice,\"Morning meeting\",08:00,09:30\n";
 
-        CalendarEvent first = events.get(0);
-        assertEquals("Alice", first.getPerson());
-        assertEquals("Morning meeting", first.getTitle());
-        assertEquals(LocalTime.of(8, 0), first.getStart());
-        assertEquals(LocalTime.of(9, 30), first.getEnd());
+        List<CalendarEvent> events = loader.load(input(csv));
+
+        CalendarEvent event = events.get(0);
+        assertEquals("Alice", event.getPerson());
+        assertEquals("Morning meeting", event.getTitle());
+        assertEquals(LocalTime.of(8, 0), event.getStart());
+        assertEquals(LocalTime.of(9, 30), event.getEnd());
     }
 
     @Test
@@ -168,14 +174,6 @@ public class CsvCalendarLoaderTest {
             loader.load(input("Alice,Morning,24:00,09:00\n")));
 
         assertTrue(ex.getMessage().contains("24:00"));
-    }
-
-    private InputStream fixture() {
-        InputStream in = getClass().getResourceAsStream("/io/gong/calendar.csv");
-        if (in == null) {
-            throw new IllegalStateException("Test fixture not found: /io/gong/calendar.csv");
-        }
-        return in;
     }
 
     private InputStream input(String csv) {
