@@ -1,4 +1,4 @@
-package io.gong.calendar.input;
+package io.gong.calendar;
 
 import io.gong.calendar.model.CalendarEvent;
 

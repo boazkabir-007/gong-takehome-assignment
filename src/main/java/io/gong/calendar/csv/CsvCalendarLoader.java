@@ -1,6 +1,6 @@
 package io.gong.calendar.csv;
 
-import io.gong.calendar.input.CalendarEventLoader;
+import io.gong.calendar.CalendarEventLoader;
 import io.gong.calendar.model.CalendarEvent;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;

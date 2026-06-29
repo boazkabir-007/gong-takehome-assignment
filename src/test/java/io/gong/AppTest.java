@@ -84,10 +84,21 @@ public class AppTest {
     public void customArgsPrintsCorrectSlots() {
         App.main(new String[]{"Alice,Jack,Bob", "30"});
 
-        String output = stdout();
-        assertTrue(output.contains("Available slot: 07:00"));
-        assertTrue(output.contains("Available slot: 07:30"));
-        assertTrue(output.contains("Available slot: 11:30"));
+        String expected = String.join(System.lineSeparator(),
+            "Available slot: 07:00",
+            "Available slot: 07:30",
+            "Available slot: 11:30",
+            "Available slot: 12:00",
+            "Available slot: 12:30",
+            "Available slot: 15:00",
+            "Available slot: 15:30",
+            "Available slot: 17:00",
+            "Available slot: 17:30",
+            "Available slot: 18:00",
+            "Available slot: 18:30"
+        ) + System.lineSeparator();
+
+        assertEquals(expected, stdout());
         assertTrue(stderr().isEmpty());
     }
 

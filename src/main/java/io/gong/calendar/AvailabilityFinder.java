@@ -21,6 +21,7 @@ public class AvailabilityFinder {
     private static final LocalTime DAY_START = LocalTime.of(7, 0);
     private static final LocalTime DAY_END = LocalTime.of(19, 0);
     private static final int DAY_MINUTES = (int) Duration.between(DAY_START, DAY_END).toMinutes();
+    // One bit per minute of the business day. Bit 0 is 07:00, bit 719 is 18:59.
     private final Map<String, BitSet> busyMinutesByPerson;
 
     public AvailabilityFinder(List<CalendarEvent> events) {
@@ -29,7 +30,7 @@ public class AvailabilityFinder {
     }
 
     public List<LocalTime> findAvailableSlots(List<String> personList, Duration eventDuration) {
-        Set<String> people = requestedPeople(personList);
+        Set<String> people = normalizeRequestedPeople(personList);
         int durationMinutes = durationInWholeMinutes(eventDuration);
 
         if (durationMinutes > DAY_MINUTES) {
@@ -45,7 +46,7 @@ public class AvailabilityFinder {
     }
 
     public List<TimeRange> findFreeWindows(List<String> personList) {
-        Set<String> people = requestedPeople(personList);
+        Set<String> people = normalizeRequestedPeople(personList);
         return scanFreeWindows(combineBusyMinutes(people));
     }
 
@@ -54,7 +55,7 @@ public class AvailabilityFinder {
 
         for (CalendarEvent event : events) {
             Objects.requireNonNull(event, "Event must not be null");
-            BitSet busy = map.computeIfAbsent(personLookupKey(event.getPerson()), p -> new BitSet(DAY_MINUTES));
+            BitSet busy = map.computeIfAbsent(normalizePersonName(event.getPerson()), p -> new BitSet(DAY_MINUTES));
             busy.set(minuteOffset(event.getStart()), minuteOffset(event.getEnd()));
         }
 
@@ -74,12 +75,12 @@ public class AvailabilityFinder {
         return busy;
     }
 
-    private Set<String> requestedPeople(List<String> personList) {
+    private Set<String> normalizeRequestedPeople(List<String> personList) {
         Objects.requireNonNull(personList, "Person list must not be null");
 
         Set<String> people = new HashSet<>();
         for (String person : personList) {
-            people.add(personLookupKey(person));
+            people.add(normalizePersonName(person));
         }
 
         if (people.isEmpty()) {
@@ -103,7 +104,8 @@ public class AvailabilityFinder {
     private List<LocalTime> findAvailableStartTimes(BitSet busyMinutes, int durationMinutes) {
         List<LocalTime> slots = new ArrayList<>();
 
-        // Try start times in steps of the meeting length, beginning at 07:00. This matches the slots shown in the README.
+        // Start times are checked on a fixed grid from 07:00.
+        // For a 60-minute meeting, candidates are 07:00, 08:00, 09:00, and so on.
         for (int start = 0; start + durationMinutes <= DAY_MINUTES; start += durationMinutes) {
             if (isAvailable(busyMinutes, start, durationMinutes)) {
                 slots.add(DAY_START.plusMinutes(start));
@@ -134,7 +136,7 @@ public class AvailabilityFinder {
         return windows;
     }
 
-    private String personLookupKey(String person) {
+    private String normalizePersonName(String person) {
         if (person == null || person.isBlank()) {
             throw new IllegalArgumentException("Person names must not be null or blank");
         }
