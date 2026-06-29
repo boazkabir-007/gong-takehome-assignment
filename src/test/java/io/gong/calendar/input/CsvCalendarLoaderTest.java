@@ -113,7 +113,7 @@ public class CsvCalendarLoaderTest {
 
     @Test
     public void stripsUtf8Bom() {
-        String csv = "﻿Alice,\"Morning meeting\",08:00,09:00\n";
+        String csv = "\uFEFFAlice,\"Morning meeting\",08:00,09:00\n";
 
         List<CalendarEvent> events = loader.load(input(csv));
 
